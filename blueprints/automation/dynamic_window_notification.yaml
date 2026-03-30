@@ -128,17 +128,24 @@ action:
           then:
             - service: !input notify_service
               data:
-                title: "Window Left Open"
+                title: "Window Open"
                 message: >
                   The {{ state_attr(window_sensor, 'friendly_name') }} has been open for {{ duration }} minutes. 
                   Outdoor temperature is {{ temp }}°C.
                 data:
                   tag: "{{ window_sensor }}"
+                  actions:
+                    - action: "MUTE_{{ window_sensor }}"
+                      title: "Mute Warning"
         
         - wait_for_trigger:
             - platform: state
               entity_id: !input window_sensor
               to: "off"
+            - platform: event
+              event_type: mobile_app_notification_action
+              event_data:
+                action: "MUTE_{{ window_sensor }}"
           timeout:
             minutes: "{{ wait_interval | int(15) }}"
           continue_on_timeout: true
@@ -147,6 +154,21 @@ action:
             - condition: template
               value_template: "{{ wait.trigger is not none }}"
           then:
+            - if:
+                - condition: template
+                  value_template: "{{ wait.trigger.platform == 'event' }}"
+              then:
+                - service: !input notify_service
+                  data:
+                    title: "Warning Muted 🔕"
+                    message: "The {{ state_attr(window_sensor, 'friendly_name') }} will no longer send open warnings."
+                    data:
+                      tag: "{{ window_sensor }}"
+                - wait_for_trigger:
+                    - platform: state
+                      entity_id: !input window_sensor
+                      to: "off"
+                      
             - service: !input notify_service
               data:
                 title: "Window Closed ✅"
