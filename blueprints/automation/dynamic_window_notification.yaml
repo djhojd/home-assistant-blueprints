@@ -132,6 +132,8 @@ action:
                 message: >
                   The {{ state_attr(window_sensor, 'friendly_name') }} has been open for {{ duration }} minutes. 
                   Outdoor temperature is {{ temp }}°C.
+                data:
+                  tag: "{{ window_sensor }}"
         
         - delay:
             minutes: "{{ wait_interval | int(15) }}"
