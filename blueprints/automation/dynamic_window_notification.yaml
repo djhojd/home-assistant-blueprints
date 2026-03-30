@@ -84,6 +84,11 @@ blueprint:
 
 mode: restart
 
+variables:
+  window_sensor: !input window_sensor
+  temp_sensor: !input temp_sensor
+  people_to_track: !input people_to_track
+
 trigger:
   - platform: state
     entity_id: !input window_sensor
@@ -110,6 +115,9 @@ action:
             # Check if anyone we care about is home
             is_anyone_home: >
               {{ expand(people_to_track) | selectattr('state', 'eq', 'home') | list | count > 0 }}
+            # Calculate duration
+            opened_at: "{{ states[window_sensor].last_changed }}"
+            duration: "{{ ((as_timestamp(now()) - as_timestamp(opened_at)) / 60) | int }}"
         
         - if:
             - condition: template
@@ -119,8 +127,8 @@ action:
               data:
                 title: "Window Left Open"
                 message: >
-                  The {{ state_attr(window_sensor, 'friendly_name') }} is still open. 
-                  Outdoor temperature is {{ temp }}°C. Please close it to save energy.
+                  The {{ state_attr(window_sensor, 'friendly_name') }} has been open for {{ duration }} minutes. 
+                  Outdoor temperature is {{ temp }}°C.
         
         - delay:
             minutes: "{{ wait_interval | int }}"

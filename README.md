@@ -18,9 +18,11 @@ To use a blueprint from this repository:
 Smartly monitors doors or windows and reminds you to close them if the outdoor temperature is cold.
 
 **Key Features**:
-- **Temperature Awareness**: Increases frequency of alerts as it gets colder outside.
-- **Presence Filtering**: Only notifies residents who are currently marked as "Home", avoiding unnecessary pings while away.
-- **Customizable Thresholds**: Easily tune what you define as "Cold", "Mild", and "Warm" directly in the HA UI.
+- **🕒 Open Duration Tracking**: Notifications now include exactly how many minutes the door or window has been left open.
+- **🌡️ Temperature Awareness**: Automatically adjusts the alert frequency based on the outside temperature (e.g., more frequent alerts when it's freezing).
+- **🏠 Presence Filtering**: Intelligently only sends notifications if at least one tracked resident is currently marked as "Home".
+- **⚙️ Customizable Thresholds**: Easily define your own "Cold", "Mild", and "Warm" temperature setpoints and notification intervals directly in the Home Assistant UI.
+- **⏳ Grace Period**: Includes a built-in 1-minute grace period to avoid notifications for brief openings (like letting a pet out).
 
 ---
 *Created with ❤️ for better smart home automation.*
