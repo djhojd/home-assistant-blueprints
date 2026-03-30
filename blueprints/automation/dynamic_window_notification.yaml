@@ -109,8 +109,8 @@ action:
           state: "on"
       sequence:
         - variables:
-            temp: "{{ states(temp_sensor) | float(0) }}"
-            # Determine wait interval based on temperature
+            temp: "{{ states(temp_sensor) | float(20) }}"
+            # Determine wait interval based on temperature (uses inputs defaults)
             wait_interval: >
               {% if temp < cold_limit %} {{ interval_cold }}
               {% elif temp < mild_limit %} {{ interval_mild }}
@@ -120,7 +120,7 @@ action:
               {{ expand(people_to_track) | selectattr('state', 'eq', 'home') | list | count > 0 }}
             # Calculate duration
             opened_at: "{{ states[window_sensor].last_changed }}"
-            duration: "{{ ((as_timestamp(now()) - as_timestamp(opened_at)) / 60) | int }}"
+            duration: "{{ ((as_timestamp(now()) - as_timestamp(opened_at)) / 60) | int(0) }}"
         
         - if:
             - condition: template
@@ -134,4 +134,4 @@ action:
                   Outdoor temperature is {{ temp }}°C.
         
         - delay:
-            minutes: "{{ wait_interval | int }}"
+            minutes: "{{ wait_interval | int(15) }}"
