@@ -135,5 +135,21 @@ action:
                 data:
                   tag: "{{ window_sensor }}"
         
-        - delay:
+        - wait_for_trigger:
+            - platform: state
+              entity_id: !input window_sensor
+              to: "off"
+          timeout:
             minutes: "{{ wait_interval | int(15) }}"
+          continue_on_timeout: true
+          
+        - if:
+            - condition: template
+              value_template: "{{ wait.trigger is not none }}"
+          then:
+            - service: !input notify_service
+              data:
+                title: "Window Closed ✅"
+                message: "The {{ state_attr(window_sensor, 'friendly_name') }} has been safely closed."
+                data:
+                  tag: "{{ window_sensor }}"
