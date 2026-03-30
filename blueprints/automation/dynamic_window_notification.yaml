@@ -1,0 +1,126 @@
+blueprint:
+  name: Dynamic Door/Window Notification
+  description: >
+    Sends recurring notifications while a door or window is open.
+    The frequency is dynamically adjusted based on the outdoor temperature.
+    Notifications are only sent if specified people are at home.
+  domain: automation
+  input:
+    window_sensor:
+      name: Door or Window Sensor
+      description: The binary sensor to monitor (e.g., binary_sensor.bathroom_window)
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: 
+            - door
+            - window
+            - opening
+    temp_sensor:
+      name: Outdoor Temperature Sensor
+      description: The sensor reporting the outdoor temperature.
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    people_to_track:
+      name: Target Residents
+      description: Only send notifications if at least one of these people is home.
+      selector:
+        entity:
+          domain: person
+          multiple: true
+    notify_service:
+      name: Notification Service
+      description: The service to use for notifications (e.g., notify.mobile_app_xiaomi_14t or notify.family_phones).
+      default: notify.notify
+      selector:
+        text:
+    cold_threshold:
+      name: Cold Temperature Threshold
+      description: Temperature below which notifications become more frequent.
+      default: 10
+      selector:
+        number:
+          min: -10
+          max: 30
+          unit_of_measurement: °C
+    mild_threshold:
+      name: Mild Temperature Threshold
+      description: Temperature below which notifications are moderately frequent.
+      default: 20
+      selector:
+        number:
+          min: 0
+          max: 35
+          unit_of_measurement: °C
+    interval_cold:
+      name: Frequent Interval (Cold)
+      description: Notification interval when it's cold (below Cold Threshold).
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 60
+          unit_of_measurement: min
+    interval_mild:
+      name: Moderate Interval (Mild)
+      description: Notification interval when it's mild (between Cold and Mild Thresholds).
+      default: 15
+      selector:
+        number:
+          min: 1
+          max: 60
+          unit_of_measurement: min
+    interval_warm:
+      name: Sparse Interval (Warm)
+      description: Notification interval above the Mild Threshold.
+      default: 30
+      selector:
+        number:
+          min: 1
+          max: 120
+          unit_of_measurement: min
+
+mode: restart
+
+trigger:
+  - platform: state
+    entity_id: !input window_sensor
+    to: "on"
+    for:
+      minutes: 1 # Grace period before first alert
+
+action:
+  - repeat:
+      while:
+        - condition: state
+          entity_id: !input window_sensor
+          state: "on"
+      sequence:
+        - variables:
+            temp: "{{ states(temp_sensor) | float(0) }}"
+            cold_limit: !input cold_threshold
+            mild_limit: !input mild_threshold
+            # Determine wait interval based on temperature
+            wait_interval: >
+              {% if temp < cold_limit %} {{ interval_cold }}
+              {% elif temp < mild_limit %} {{ interval_mild }}
+              {% else %} {{ interval_warm }} {% endif %}
+            # Check if anyone we care about is home
+            is_anyone_home: >
+              {{ expand(people_to_track) | selectattr('state', 'eq', 'home') | list | count > 0 }}
+        
+        - if:
+            - condition: template
+              value_template: "{{ is_anyone_home }}"
+          then:
+            - service: !input notify_service
+              data:
+                title: "Window Left Open"
+                message: >
+                  The {{ state_attr(window_sensor, 'friendly_name') }} is still open. 
+                  Outdoor temperature is {{ temp }}°C. Please close it to save energy.
+        
+        - delay:
+            minutes: "{{ wait_interval | int }}"
