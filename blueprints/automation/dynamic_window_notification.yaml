@@ -88,6 +88,11 @@ variables:
   window_sensor: !input window_sensor
   temp_sensor: !input temp_sensor
   people_to_track: !input people_to_track
+  cold_limit: !input cold_threshold
+  mild_limit: !input mild_threshold
+  interval_cold: !input interval_cold
+  interval_mild: !input interval_mild
+  interval_warm: !input interval_warm
 
 trigger:
   - platform: state
@@ -105,8 +110,6 @@ action:
       sequence:
         - variables:
             temp: "{{ states(temp_sensor) | float(0) }}"
-            cold_limit: !input cold_threshold
-            mild_limit: !input mild_threshold
             # Determine wait interval based on temperature
             wait_interval: >
               {% if temp < cold_limit %} {{ interval_cold }}
