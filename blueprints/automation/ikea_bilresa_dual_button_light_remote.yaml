@@ -1,0 +1,151 @@
+blueprint:
+  name: IKEA BILRESA Dual Button Light Remote
+  description: >
+    Control a light or light group with an IKEA BILRESA Dual Button Remote.
+    This version is optimized for lights and supports custom Jinja2 templates for double-click behavior.
+    
+    Upper Button (Button 1):
+    - Single Click (multi_press_1): Increase brightness.
+    - Double Click (multi_press_2): Custom brightness cycle.
+    - Long Press (long_press): Turn ON.
+    
+    Lower Button (Button 2):
+    - Single Click (multi_press_1): Decrease brightness.
+    - Double Click (multi_press_2): Custom brightness cycle.
+    - Long Press (long_press): Turn OFF.
+  domain: automation
+  input:
+    remote_button_upper:
+      name: Upper Button (Button 1)
+      description: The event entity for the "Up/Upper" button.
+      selector:
+        entity:
+          domain: event
+    remote_button_lower:
+      name: Lower Button (Button 2)
+      description: The event entity for the "Down/Lower" button.
+      selector:
+        entity:
+          domain: event
+    target_light:
+      name: Target Light
+      description: The light or light group entity to control.
+      selector:
+        entity:
+          domain: light
+    brightness_step_pct:
+      name: Brightness Step Size
+      description: Percentage to increase/decrease brightness on single click.
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 50
+          unit_of_measurement: "%"
+          mode: slider
+    upper_double_click_template:
+      name: "[Upper] Double Click Brightness Template"
+      description: Jinja2 template to determine brightness percentage (0-100).
+      default: "{{ 50 if (state_attr(light_entity, 'brightness') | float(0) / 2.55) < 50 else 100 }}"
+      selector:
+        text:
+          multiline: true
+    lower_double_click_template:
+      name: "[Lower] Double Click Brightness Template"
+      description: Jinja2 template to determine brightness percentage (0-100).
+      default: "{{ 50 if (state_attr(light_entity, 'brightness') | float(0) / 2.55) > 50 else 1 }}"
+      selector:
+        text:
+          multiline: true
+
+mode: restart
+
+variables:
+  light_entity: !input target_light
+  upper_template: !input upper_double_click_template
+  lower_template: !input lower_double_click_template
+  step_pct: !input brightness_step_pct
+
+trigger:
+  - platform: state
+    entity_id: !input remote_button_upper
+    id: upper
+  - platform: state
+    entity_id: !input remote_button_lower
+    id: lower
+
+action:
+  - choose:
+      # Upper Button Logic
+      - conditions:
+          - condition: trigger
+            id: upper
+        sequence:
+          - choose:
+              # Single Click: Increase
+              - conditions:
+                  - condition: template
+                    value_template: "{{ trigger.to_state.attributes.event_type == 'multi_press_1' }}"
+                sequence:
+                  - service: light.turn_on
+                    target:
+                      entity_id: !input target_light
+                    data:
+                      brightness_step_pct: "{{ step_pct }}"
+              
+              # Double Click: Cycle
+              - conditions:
+                  - condition: template
+                    value_template: "{{ trigger.to_state.attributes.event_type == 'multi_press_2' }}"
+                sequence:
+                  - service: light.turn_on
+                    target:
+                      entity_id: !input target_light
+                    data:
+                      brightness_pct: "{{ upper_template }}"
+
+              # Long Press: Turn ON
+              - conditions:
+                  - condition: template
+                    value_template: "{{ trigger.to_state.attributes.event_type == 'long_press' }}"
+                sequence:
+                  - service: light.turn_on
+                    target:
+                      entity_id: !input target_light
+
+      # Lower Button Logic
+      - conditions:
+          - condition: trigger
+            id: lower
+        sequence:
+          - choose:
+              # Single Click: Decrease
+              - conditions:
+                  - condition: template
+                    value_template: "{{ trigger.to_state.attributes.event_type == 'multi_press_1' }}"
+                sequence:
+                  - service: light.turn_on
+                    target:
+                      entity_id: !input target_light
+                    data:
+                      brightness_step_pct: "{{ step_pct * -1 }}"
+              
+              # Double Click: Cycle
+              - conditions:
+                  - condition: template
+                    value_template: "{{ trigger.to_state.attributes.event_type == 'multi_press_2' }}"
+                sequence:
+                  - service: light.turn_on
+                    target:
+                      entity_id: !input target_light
+                    data:
+                      brightness_pct: "{{ lower_template }}"
+
+              # Long Press: Turn OFF
+              - conditions:
+                  - condition: template
+                    value_template: "{{ trigger.to_state.attributes.event_type == 'long_press' }}"
+                sequence:
+                  - service: light.turn_off
+                    target:
+                      entity_id: !input target_light

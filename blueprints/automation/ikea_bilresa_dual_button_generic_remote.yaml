@@ -1,0 +1,119 @@
+blueprint:
+  name: IKEA BILRESA Dual Button Generic Remote
+  description: >
+    Control anything with an IKEA BILRESA Dual Button Remote.
+    Assign custom actions for Single Click, Double Click, and Long Press on both buttons.
+  domain: automation
+  input:
+    remote_button_upper:
+      name: Upper Button (Button 1)
+      description: The event entity for the "Up/Upper" button (e.g., event.bilresa_dual_button_button_1).
+      selector:
+        entity:
+          domain: event
+    remote_button_lower:
+      name: Lower Button (Button 2)
+      description: The event entity for the "Down/Lower" button (e.g., event.bilresa_dual_button_button_2).
+      selector:
+        entity:
+          domain: event
+    
+    # Upper Button Actions
+    upper_single_press:
+      name: "[Upper] Single Click Action"
+      description: Action to perform on upper single click (multi_press_1).
+      default: []
+      selector:
+        action: {}
+    upper_double_press:
+      name: "[Upper] Double Click Action"
+      description: Action to perform on upper double click (multi_press_2).
+      default: []
+      selector:
+        action: {}
+    upper_long_press:
+      name: "[Upper] Long Press Action"
+      description: Action to perform on upper long press (long_press).
+      default: []
+      selector:
+        action: {}
+    
+    # Lower Button Actions
+    lower_single_press:
+      name: "[Lower] Single Click Action"
+      description: Action to perform on lower single click (multi_press_1).
+      default: []
+      selector:
+        action: {}
+    lower_double_press:
+      name: "[Lower] Double Click Action"
+      description: Action to perform on lower double click (multi_press_2).
+      default: []
+      selector:
+        action: {}
+    lower_long_press:
+      name: "[Lower] Long Press Action"
+      description: Action to perform on lower long press (long_press).
+      default: []
+      selector:
+        action: {}
+
+mode: restart
+
+trigger:
+  - platform: state
+    entity_id: !input remote_button_upper
+    id: upper
+  - platform: state
+    entity_id: !input remote_button_lower
+    id: lower
+
+action:
+  - choose:
+      # Upper Button Logic
+      - conditions:
+          - condition: trigger
+            id: upper
+        sequence:
+          - choose:
+              # Single Click
+              - conditions:
+                  - condition: template
+                    value_template: "{{ trigger.to_state.attributes.event_type == 'multi_press_1' }}"
+                sequence: !input upper_single_press
+              
+              # Double Click
+              - conditions:
+                  - condition: template
+                    value_template: "{{ trigger.to_state.attributes.event_type == 'multi_press_2' }}"
+                sequence: !input upper_double_press
+
+              # Long Press
+              - conditions:
+                  - condition: template
+                    value_template: "{{ trigger.to_state.attributes.event_type == 'long_press' }}"
+                sequence: !input upper_long_press
+
+      # Lower Button Logic
+      - conditions:
+          - condition: trigger
+            id: lower
+        sequence:
+          - choose:
+              # Single Click
+              - conditions:
+                  - condition: template
+                    value_template: "{{ trigger.to_state.attributes.event_type == 'multi_press_1' }}"
+                sequence: !input lower_single_press
+              
+              # Double Click
+              - conditions:
+                  - condition: template
+                    value_template: "{{ trigger.to_state.attributes.event_type == 'multi_press_2' }}"
+                sequence: !input lower_double_press
+
+              # Long Press
+              - conditions:
+                  - condition: template
+                    value_template: "{{ trigger.to_state.attributes.event_type == 'long_press' }}"
+                sequence: !input lower_long_press
