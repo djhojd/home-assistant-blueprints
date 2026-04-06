@@ -1,8 +1,18 @@
 blueprint:
   name: IKEA BILRESA Dual Button Generic Remote
-  description: >
-    Control anything with an IKEA BILRESA Dual Button Remote.
-    Assign custom actions for Single Click, Double Click, and Long Press on both buttons.
+  description: |
+    ## IKEA BILRESA Dual Button Generic Remote
+    A versatile blueprint to assign any Home Assistant **actions** to the IKEA BILRESA Dual Button Remote.
+
+    ### 🔼 Upper Button (Button 1)
+    - **Single Click**: Custom Action (`multi_press_1`)
+    - **Double Click**: Custom Action (`multi_press_2`)
+    - **Long Press**: Custom Action (`long_press`)
+
+    ### 🔽 Lower Button (Button 2)
+    - **Single Click**: Custom Action (`multi_press_1`)
+    - **Double Click**: Custom Action (`multi_press_2`)
+    - **Long Press**: Custom Action (`long_press`)
   domain: automation
   input:
     remote_button_upper:

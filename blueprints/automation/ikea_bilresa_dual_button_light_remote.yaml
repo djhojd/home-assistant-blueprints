@@ -1,18 +1,18 @@
 blueprint:
   name: IKEA BILRESA Dual Button Light Remote
-  description: >
-    Control a light or light group with an IKEA BILRESA Dual Button Remote.
-    This version is optimized for lights and supports custom Jinja2 templates for double-click behavior.
-    
-    Upper Button (Button 1):
-    - Single Click (multi_press_1): Increase brightness.
-    - Double Click (multi_press_2): Custom brightness cycle.
-    - Long Press (long_press): Turn ON.
-    
-    Lower Button (Button 2):
-    - Single Click (multi_press_1): Decrease brightness.
-    - Double Click (multi_press_2): Custom brightness cycle.
-    - Long Press (long_press): Turn OFF.
+  description: |
+    ## IKEA BILRESA Dual Button Light Remote
+    Control a **light** or **light group** with precision. This version is optimized for brightness control and supports custom Jinja2 templates for double-click behavior.
+
+    ### 🔼 Upper Button (Button 1)
+    - **Single Click**: Increase brightness (`multi_press_1`)
+    - **Double Click**: Custom brightness template (`multi_press_2`)
+    - **Long Press**: Turn ON (`long_press`)
+
+    ### 🔽 Lower Button (Button 2)
+    - **Single Click**: Decrease brightness (`multi_press_1`)
+    - **Double Click**: Custom brightness template (`multi_press_2`)
+    - **Long Press**: Turn OFF (`long_press`)
   domain: automation
   input:
     remote_button_upper:

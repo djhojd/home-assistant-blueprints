@@ -1,9 +1,16 @@
 blueprint:
   name: Dynamic Door/Window Notification
-  description: >
+  description: |
+    ## Dynamic Door/Window Notification
     Sends recurring notifications while a door or window is open.
-    The frequency is dynamically adjusted based on the outdoor temperature.
-    Notifications are only sent if specified people are at home.
+
+    ### ❄️ Dynamic Frequency
+    The notification frequency is **dynamically adjusted** based on the outdoor temperature:
+    - **Cold**: More frequent alerts to prevent heat loss.
+    - **Mild/Warm**: Sparse alerts for convenience.
+
+    ### 🏠 Presence Detection
+    Notifications are only sent if specified **residents are at home**, avoiding unnecessary alerts while away.
   domain: automation
   input:
     window_sensor:
