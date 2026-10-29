@@ -1,151 +1,313 @@
 blueprint:
   name: IKEA BILRESA Dual Button Light Remote
+  author: djhojd
   description: |
     ## IKEA BILRESA Dual Button Light Remote
-    Control a **light** or **light group** with precision. This version is optimized for brightness control and supports custom Jinja2 templates for double-click behavior.
+    Control a **light** or **light group** from one or more BILRESA dual buttons. Every listed remote does the same thing.
 
     ### 🔼 Upper Button (Button 1)
     - **Single Click**: Increase brightness (`multi_press_1`)
-    - **Double Click**: Custom brightness template (`multi_press_2`)
-    - **Long Press**: Turn ON (`long_press`)
+    - **Double Click**: Jump to the middle level, else the high level (`multi_press_2`)
+    - **Long Press**: Turn ON, or jump to the high level if already on; brighten while held with *Hold to Dim* (`long_press`)
 
     ### 🔽 Lower Button (Button 2)
     - **Single Click**: Decrease brightness (`multi_press_1`)
-    - **Double Click**: Custom brightness template (`multi_press_2`)
-    - **Long Press**: Turn OFF (`long_press`)
+    - **Double Click**: Jump to the middle level, else the low level (`multi_press_2`)
+    - **Long Press**: Turn OFF, or dim while held with *Hold to Dim* (`long_press`)
   domain: automation
+  source_url: https://github.com/djhojd/home-assistant-blueprints/blob/main/blueprints/automation/ikea_bilresa_dual_button_light_remote.yaml
+  homeassistant:
+    # event.received is a purpose-specific trigger, added in 2026.7
+    min_version: "2026.7.0"
   input:
-    remote_button_upper:
-      name: Upper Button (Button 1)
-      description: The event entity for the "Up/Upper" button.
-      selector:
-        entity:
-          domain: event
-    remote_button_lower:
-      name: Lower Button (Button 2)
-      description: The event entity for the "Down/Lower" button.
-      selector:
-        entity:
-          domain: event
-    target_light:
-      name: Target Light
-      description: The light or light group entity to control.
-      selector:
-        entity:
-          domain: light
-    brightness_step_pct:
-      name: Brightness Step Size
-      description: Percentage to increase/decrease brightness on single click.
-      default: 10
-      selector:
-        number:
-          min: 1
-          max: 50
-          unit_of_measurement: "%"
-          mode: slider
-    upper_double_click_template:
-      name: "[Upper] Double Click Brightness Template"
-      description: Jinja2 template to determine brightness percentage (0-100).
-      default: "{{ 50 if (state_attr(light_entity, 'brightness') | float(0) / 2.55) < 50 else 100 }}"
-      selector:
-        text:
-          multiline: true
-    lower_double_click_template:
-      name: "[Lower] Double Click Brightness Template"
-      description: Jinja2 template to determine brightness percentage (0-100).
-      default: "{{ 50 if (state_attr(light_entity, 'brightness') | float(0) / 2.55) > 50 else 1 }}"
-      selector:
-        text:
-          multiline: true
+    devices:
+      name: Devices
+      icon: mdi:remote
+      input:
+        remote_button_upper:
+          name: Upper Buttons (Button 1)
+          description: The event entities for the "Up/Upper" button, one per remote.
+          selector:
+            entity:
+              domain: event
+              multiple: true
+        remote_button_lower:
+          name: Lower Buttons (Button 2)
+          description: The event entities for the "Down/Lower" button, one per remote.
+          selector:
+            entity:
+              domain: event
+              multiple: true
+        target_light:
+          name: Target Light
+          description: The light or light group entity to control.
+          selector:
+            entity:
+              domain: light
+    settings:
+      name: Settings
+      icon: mdi:cog
+      collapsed: true
+      input:
+        brightness_step_pct:
+          name: Brightness Step Size
+          description: Percentage to increase/decrease brightness on single click.
+          default: 10
+          selector:
+            number:
+              min: 1
+              max: 50
+              unit_of_measurement: "%"
+              mode: slider
+        high_pct:
+          name: High Level
+          description: Double click on the upper button jumps here when already at or above the middle level; long press jumps here when the light is on.
+          default: 100
+          selector:
+            number:
+              min: 1
+              max: 100
+              unit_of_measurement: "%"
+              mode: slider
+        mid_pct:
+          name: Middle Level
+          description: First stop of a double click on either button.
+          default: 50
+          selector:
+            number:
+              min: 1
+              max: 100
+              unit_of_measurement: "%"
+              mode: slider
+        low_pct:
+          name: Low Level
+          description: Floor for double click and hold-to-dim; 0 would turn the light off.
+          default: 1
+          selector:
+            number:
+              min: 1
+              max: 100
+              unit_of_measurement: "%"
+              mode: slider
+    hold:
+      name: Hold to Dim
+      icon: mdi:gesture-tap-hold
+      collapsed: true
+      input:
+        hold_to_dim:
+          name: Hold to Dim
+          description: >-
+            Long press brightens (upper) or dims (lower) while held instead of turning the light on or off.
+            Matter sends no event while a button is held, so this repeats small steps until the release event.
+          default: false
+          selector:
+            boolean:
+        hold_step_pct:
+          name: Hold Step Size
+          description: Brightness change per repeat while held.
+          default: 5
+          selector:
+            number:
+              min: 1
+              max: 25
+              unit_of_measurement: "%"
+              mode: slider
+        hold_interval_ms:
+          name: Hold Interval
+          description: Pause between repeats while held.
+          default: 200
+          selector:
+            number:
+              min: 50
+              max: 1000
+              step: 10
+              unit_of_measurement: ms
+              mode: slider
+        hold_max_steps:
+          name: Hold Max Steps
+          description: Runaway cap in case the release event is missed.
+          default: 60
+          selector:
+            number:
+              min: 1
+              max: 500
+              mode: box
 
 mode: restart
 
 variables:
   light_entity: !input target_light
-  upper_template: !input upper_double_click_template
-  lower_template: !input lower_double_click_template
   step_pct: !input brightness_step_pct
+  high_pct: !input high_pct
+  mid_pct: !input mid_pct
+  low_pct: !input low_pct
+  hold_dim: !input hold_to_dim
+  hold_step_pct: !input hold_step_pct
+  hold_interval_ms: !input hold_interval_ms
+  hold_max_steps: !input hold_max_steps
 
-trigger:
-  - platform: state
-    entity_id: !input remote_button_upper
-    id: upper
-  - platform: state
-    entity_id: !input remote_button_lower
-    id: lower
+triggers:
+  - trigger: event.received
+    id: upper_single
+    target:
+      entity_id: !input remote_button_upper
+    options:
+      event_type: [multi_press_1]
+  - trigger: event.received
+    id: upper_double
+    target:
+      entity_id: !input remote_button_upper
+    options:
+      event_type: [multi_press_2]
+  - trigger: event.received
+    id: upper_long
+    target:
+      entity_id: !input remote_button_upper
+    options:
+      event_type: [long_press]
+  - trigger: event.received
+    id: lower_single
+    target:
+      entity_id: !input remote_button_lower
+    options:
+      event_type: [multi_press_1]
+  - trigger: event.received
+    id: lower_double
+    target:
+      entity_id: !input remote_button_lower
+    options:
+      event_type: [multi_press_2]
+  - trigger: event.received
+    id: lower_long
+    target:
+      entity_id: !input remote_button_lower
+    options:
+      event_type: [long_press]
 
-action:
+# Brightness is 0-255, so a light at 50% reads 50.2%; the double-click levels and hold loops round first or the middle level would repeat itself.
+actions:
   - choose:
-      # Upper Button Logic
       - conditions:
           - condition: trigger
-            id: upper
+            id: upper_single
         sequence:
-          - choose:
-              # Single Click: Increase
-              - conditions:
-                  - condition: template
-                    value_template: "{{ trigger.to_state.attributes.event_type == 'multi_press_1' }}"
-                sequence:
-                  - service: light.turn_on
-                    target:
-                      entity_id: !input target_light
-                    data:
-                      brightness_step_pct: "{{ step_pct }}"
-              
-              # Double Click: Cycle
-              - conditions:
-                  - condition: template
-                    value_template: "{{ trigger.to_state.attributes.event_type == 'multi_press_2' }}"
-                sequence:
-                  - service: light.turn_on
-                    target:
-                      entity_id: !input target_light
-                    data:
-                      brightness_pct: "{{ upper_template }}"
-
-              # Long Press: Turn ON
-              - conditions:
-                  - condition: template
-                    value_template: "{{ trigger.to_state.attributes.event_type == 'long_press' }}"
-                sequence:
-                  - service: light.turn_on
-                    target:
-                      entity_id: !input target_light
-
-      # Lower Button Logic
+          - action: light.turn_on
+            target:
+              entity_id: !input target_light
+            data:
+              brightness_step_pct: "{{ step_pct }}"
       - conditions:
           - condition: trigger
-            id: lower
+            id: upper_double
+        sequence:
+          - action: light.turn_on
+            target:
+              entity_id: !input target_light
+            data:
+              brightness_pct: >-
+                {{ mid_pct if (state_attr(light_entity, 'brightness') | float(0) / 2.55) | round(0) < mid_pct else high_pct }}
+      - conditions:
+          - condition: trigger
+            id: upper_long
         sequence:
           - choose:
-              # Single Click: Decrease
               - conditions:
                   - condition: template
-                    value_template: "{{ trigger.to_state.attributes.event_type == 'multi_press_1' }}"
+                    value_template: "{{ hold_dim }}"
                 sequence:
-                  - service: light.turn_on
+                  # The event entity's state is its last-event timestamp; the release event changes it, which ends the loop.
+                  - variables:
+                      hold_entity: "{{ trigger.entity_id }}"
+                      hold_state: "{{ states(trigger.entity_id) }}"
+                  - if:
+                      - condition: state
+                        entity_id: !input target_light
+                        state: "off"
+                    then:
+                      - action: light.turn_on
+                        target:
+                          entity_id: !input target_light
+                        data:
+                          brightness_pct: "{{ low_pct }}"
+                  - repeat:
+                      while:
+                        - condition: template
+                          value_template: >-
+                            {{ states(hold_entity) == hold_state
+                               and repeat.index <= hold_max_steps
+                               and (state_attr(light_entity, 'brightness') | float(0) / 2.55) | round(0) < 100 }}
+                      sequence:
+                        - action: light.turn_on
+                          target:
+                            entity_id: !input target_light
+                          data:
+                            brightness_pct: >-
+                              {{ [(state_attr(light_entity, 'brightness') | float(0) / 2.55) | round(0) + hold_step_pct, 100] | min }}
+                        - delay:
+                            milliseconds: "{{ hold_interval_ms }}"
+            default:
+              - if:
+                  - condition: state
+                    entity_id: !input target_light
+                    state: "on"
+                then:
+                  - action: light.turn_on
                     target:
                       entity_id: !input target_light
                     data:
-                      brightness_step_pct: "{{ step_pct * -1 }}"
-              
-              # Double Click: Cycle
-              - conditions:
-                  - condition: template
-                    value_template: "{{ trigger.to_state.attributes.event_type == 'multi_press_2' }}"
-                sequence:
-                  - service: light.turn_on
+                      brightness_pct: "{{ high_pct }}"
+                else:
+                  - action: light.turn_on
                     target:
                       entity_id: !input target_light
-                    data:
-                      brightness_pct: "{{ lower_template }}"
-
-              # Long Press: Turn OFF
+      - conditions:
+          - condition: trigger
+            id: lower_single
+        sequence:
+          - action: light.turn_on
+            target:
+              entity_id: !input target_light
+            data:
+              brightness_step_pct: "{{ step_pct * -1 }}"
+      - conditions:
+          - condition: trigger
+            id: lower_double
+        sequence:
+          - action: light.turn_on
+            target:
+              entity_id: !input target_light
+            data:
+              brightness_pct: >-
+                {{ mid_pct if (state_attr(light_entity, 'brightness') | float(0) / 2.55) | round(0) > mid_pct else low_pct }}
+      - conditions:
+          - condition: trigger
+            id: lower_long
+        sequence:
+          - choose:
               - conditions:
                   - condition: template
-                    value_template: "{{ trigger.to_state.attributes.event_type == 'long_press' }}"
+                    value_template: "{{ hold_dim }}"
                 sequence:
-                  - service: light.turn_off
-                    target:
-                      entity_id: !input target_light
+                  - variables:
+                      hold_entity: "{{ trigger.entity_id }}"
+                      hold_state: "{{ states(trigger.entity_id) }}"
+                  - repeat:
+                      while:
+                        - condition: template
+                          value_template: >-
+                            {{ states(hold_entity) == hold_state
+                               and repeat.index <= hold_max_steps
+                               and (state_attr(light_entity, 'brightness') | float(0) / 2.55) | round(0) > low_pct }}
+                      sequence:
+                        - action: light.turn_on
+                          target:
+                            entity_id: !input target_light
+                          data:
+                            brightness_pct: >-
+                              {{ [(state_attr(light_entity, 'brightness') | float(0) / 2.55) | round(0) - hold_step_pct, low_pct] | max }}
+                        - delay:
+                            milliseconds: "{{ hold_interval_ms }}"
+            default:
+              - action: light.turn_off
+                target:
+                  entity_id: !input target_light

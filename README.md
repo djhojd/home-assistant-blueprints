@@ -50,12 +50,14 @@ A universal blueprint that transforms your IKEA BILRESA Dual Button remote into 
 *Path: `blueprints/automation/ikea_bilresa_dual_button_light_remote.yaml`*
 
 **Description**:
-A specialized version of the remote blueprint optimized specifically for light entities and light groups.
+A specialized version of the remote blueprint optimized specifically for light entities and light groups. Requires Home Assistant 2026.7 or later.
 
 **Key Features**:
-- **🛠️ Smart Brightness Logic**: Pre-configured for increase/decrease steps and brightness cycling.
-- **✨ Custom Templates**: Both double-click actions support custom Jinja2 templates for ultimate flexibility directly in the UI.
-- **⚙️ Configurable Step Size**: Choose your own brightness increment/decrement percentage.
+- **🎛️ Multiple Remotes**: One automation serves any number of BILRESA dual buttons; every listed remote does the same thing.
+- **🛠️ Smart Brightness Logic**: Single click steps brightness up or down. Double click jumps to the middle level, then to the high (upper button) or low (lower button) level.
+- **💡 Long Press**: Upper turns the light on, or jumps to the high level if already on. Lower turns it off.
+- **✋ Hold to Dim** (optional): Long press brightens or dims while held instead, stopping on release.
+- **⚙️ Configurable Levels**: Step size, high, middle and low levels, plus hold step size, interval and a runaway cap.
 
 ---
 *Created with ❤️ for better smart home automation.*
